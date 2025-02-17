@@ -1,10 +1,10 @@
 <template>
-  <TresCanvas clear-color="#82DBC5">
+  <TresCanvas window-size clear-color="#82DBC5">
     <Stats />
-    <TresPerspectiveCamera />
+    <TresPerspectiveCamera :args="[75, 1, 0.1, 1000]" :position="[3, 1, 4]" :look-at="[0, 0, 0]" />
     <TresMesh :position="[0, 0, 0]" ref="cubeRef">
-      <TresBoxGeometry />
-      <TresMeshBasicMaterial  color="yellow" />
+      <TresTorusKnotGeometry :args = "[1, 0.3, 100, 16]"/>
+      <TresMeshNormalMaterial />
     </TresMesh>
     <TresAxesHelper/>
   </TresCanvas>
@@ -12,18 +12,29 @@
 </template>
 
 <script setup>
-import {ref, shallowRef, watchEffect} from 'vue';
-import { TresCanvas, useRenderLoop } from '@tresjs/core';
+import {ref, shallowRef, watchEffect, onMounted, onUnmounted} from 'vue';
+import { TresCanvas, useRenderLoop, useTres } from '@tresjs/core';
 import { Stats  } from '@tresjs/cientos';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const { state } = useTres();
+let controls = null;
+
+
+watchEffect(()=>{
+  if(state.renderer && state.camera){
+    controls = new OrbitControls(state.camera, state.renderer.domElement);
+  }
+})
 
 const { onLoop } = useRenderLoop();
 
 const cubeRef = shallowRef();
 
-onLoop(({delta, elapsed})=>{
+onLoop(({delta})=>{
   if(cubeRef.value){
+    cubeRef.value.rotation.x += delta;
     cubeRef.value.rotation.y += delta;
-    cubeRef.value.rotation.z = elapsed;
 
     // cubeRef.value.position.x = Math.sin(elapsed * 2);
     // cubeRef.value.position.y = Math.sin(elapsed * 2);
@@ -37,9 +48,21 @@ onLoop(({delta, elapsed})=>{
   }
 })
 
-watchEffect(()=>{
-  console.log(cubeRef);
-})
+const handleScroll = (event) => {
+  if(cubeRef.value){
+    // cubeRef.value.rotation.x += event.deltaX * 0.5;
+    cubeRef.value.rotation.y += - event.deltaY * 0.5;
+
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("wheel", handleScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("wheel", handleScroll);
+});
 
 </script>
 
